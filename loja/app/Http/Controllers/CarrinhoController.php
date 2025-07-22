@@ -1,8 +1,8 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Produto;
+use App\Models\Estoque;
 use Illuminate\Http\Request;
 
 class CarrinhoController extends Controller
@@ -17,12 +17,26 @@ class CarrinhoController extends Controller
 
         $produto = Produto::findOrFail($request->produto_id);
 
-        $carrinho = session()->get('carrinho', []);
+        // Buscar estoque da variação
+        $estoque = Estoque::where('produto_id', $produto->id)
+            ->where('variacao', $request->variacao)
+            ->first();
 
+        if (!$estoque || $estoque->quantidade < 1) {
+            return redirect()->route('produtos.index')->with('errors', 'Variação ou estoque indisponível.');
+        }
+
+        $carrinho = session()->get('carrinho', []);
         $key = $request->produto_id . '-' . ($request->variacao ?? 'null');
+        $quantidadeNoCarrinho = isset($carrinho[$key]) ? $carrinho[$key]['quantidade'] : 0;
+        $totalSolicitado = $quantidadeNoCarrinho + $request->quantidade;
+
+        if ($totalSolicitado > $estoque->quantidade) {
+            return redirect()->route('produtos.index')->with('errors', 'Só temos ' . $estoque->quantidade . ' unidade(s) em estoque para esta variação.');
+        }
 
         if(isset($carrinho[$key])) {
-            $carrinho[$key]['quantidade'] += $request->quantidade;
+            $carrinho[$key]['quantidade'] = $totalSolicitado;
         } else {
             $carrinho[$key] = [
                 'produto_id' => $produto->id,
@@ -35,12 +49,59 @@ class CarrinhoController extends Controller
 
         session()->put('carrinho', $carrinho);
 
-        return redirect()->back()->with('success', 'Produto adicionado ao carrinho!');
+        return redirect()->route('produtos.index')->with('success', 'Produto adicionado ao carrinho!');
     }
 
     public function mostrar()
     {
         $carrinho = session()->get('carrinho', []);
-        return view('carrinho.index', compact('carrinho'));
+        $subtotal = 0;
+        foreach($carrinho as $item) {
+            $subtotal += $item['preco'] * $item['quantidade'];
+        }
+        if($subtotal >= 52 && $subtotal <= 166.59) {
+            $frete = 15;
+        } elseif($subtotal > 200) {
+            $frete = 0;
+        } else {
+            $frete = 20;
+        }
+        $total = $subtotal + $frete;
+
+        // Verificação de CEP via ViaCEP
+        $cep = request('cep');
+        $cepValido = null;
+        $endereco = null;
+        if ($cep) {
+            $cepLimpo = preg_replace('/\D/', '', $cep);
+            if (strlen($cepLimpo) === 8) {
+                $response = @file_get_contents("https://viacep.com.br/ws/{$cepLimpo}/json/");
+                if ($response) {
+                    $data = json_decode($response, true);
+                    if (!isset($data['erro'])) {
+                        $cepValido = true;
+                        $endereco = $data['logradouro'] . ', ' . $data['bairro'] . ', ' . $data['localidade'] . ' - ' . $data['uf'];
+                    } else {
+                        $cepValido = false;
+                    }
+                } else {
+                    $cepValido = false;
+                }
+            } else {
+                $cepValido = false;
+            }
+        }
+        return view('carrinho.index', compact('carrinho', 'subtotal', 'frete', 'total', 'cep', 'cepValido', 'endereco'));
+    }
+
+    public function remover(Request $request)
+    {
+        $key = $request->key;
+        $carrinho = session()->get('carrinho', []);
+        if(isset($carrinho[$key])) {
+            unset($carrinho[$key]);
+            session()->put('carrinho', $carrinho);
+        }
+        return redirect()->route('carrinho.mostrar')->with('success', 'Item removido do carrinho!');
     }
 }

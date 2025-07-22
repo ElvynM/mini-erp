@@ -46,36 +46,67 @@ class ProdutosController extends Controller
         return redirect()->route('produtos.index')->with('success', 'Produto criado com sucesso!');
     }
 
+    public function edit($id)
+    {
+        $produto = Produto::with('estoques')->findOrFail($id);
+        return view('produtos.edit', compact('produto'));
+    }
+
     public function update(Request $request, $id)
     {
         $produto = Produto::findOrFail($id);
 
-        $request->validate([
+        $rules = [
             'nome' => 'required|string',
             'preco' => 'required|numeric',
             'estoques.*.id' => 'nullable|exists:estoques,id',
             'estoques.*.variacao' => 'nullable|string',
-            'estoques.*.quantidade' => 'required|integer|min:0',
-        ]);
-
+            'estoques.*.quantidade' => 'nullable|integer|min:0',
+        ];
+        // Se o campo de nova variação estiver preenchido, exige obrigatoriedade
+        if (
+            isset($request->estoques['new']) &&
+            (
+                (!empty($request->estoques['new']['variacao']) && $request->estoques['new']['variacao'] !== null) ||
+                ($request->estoques['new']['quantidade'] !== null && $request->estoques['new']['quantidade'] !== '')
+            )
+        ) {
+            $rules['estoques.new.variacao'] = 'required|string';
+            $rules['estoques.new.quantidade'] = 'required|integer|min:0';
+        }
+        $request->validate($rules);
         $produto->update([
             'nome' => $request->nome,
             'preco' => $request->preco,
         ]);
 
-        foreach ($request->estoques as $estoque) {
-            if (isset($estoque['id'])) {
-                $estoqueModel = Estoque::find($estoque['id']);
-                $estoqueModel->update([
-                    'variacao' => $estoque['variacao'] ?? null,
-                    'quantidade' => $estoque['quantidade'],
-                ]);
-            } else {
-                $produto->estoques()->create([
-                    'variacao' => $estoque['variacao'] ?? null,
-                    'quantidade' => $estoque['quantidade'],
-                ]);
+        foreach ($request->estoques as $key => $estoque) {
+            if ($key === 'new') {
+                continue;
             }
+            if (isset($estoque['id']) && $estoque['id']) {
+                $estoqueModel = Estoque::find($estoque['id']);
+                if ($estoqueModel) {
+                    $estoqueModel->variacao = $estoque['variacao'];
+                    $estoqueModel->quantidade = (int) $estoque['quantidade'];
+                    $estoqueModel->save();
+                }
+            }
+        }
+        // Adiciona nova variação se os campos estiverem preenchidos
+        if (
+            isset($request->estoques['new']) &&
+            isset($request->estoques['new']['variacao']) &&
+            isset($request->estoques['new']['quantidade']) &&
+            $request->estoques['new']['variacao'] !== null &&
+            $request->estoques['new']['variacao'] !== '' &&
+            $request->estoques['new']['quantidade'] !== null &&
+            $request->estoques['new']['quantidade'] !== ''
+        ) {
+            $produto->estoques()->create([
+                'variacao' => $request->estoques['new']['variacao'],
+                'quantidade' => (int) $request->estoques['new']['quantidade'],
+            ]);
         }
 
         return redirect()->route('produtos.index')->with('success', 'Produto atualizado com sucesso!');

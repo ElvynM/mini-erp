@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Pedido;
 use App\Models\ItemPedido;
 use App\Models\Cupom;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -14,9 +15,19 @@ class PedidoController extends Controller
     {
         $request->validate([
             'cep' => 'required|string',
-            'endereco' => 'required|string',
+            'endereco' => 'nullable|string',
             'cupom_codigo' => 'nullable|string',
         ]);
+
+        // Integração ViaCEP
+        $cep = preg_replace('/[^0-9]/', '', $request->cep);
+        $response = Http::get("https://viacep.com.br/ws/{$cep}/json/");
+        if ($response->failed() || isset($response->json()['erro'])) {
+            return redirect()->back()->withErrors('CEP inválido');
+        }
+        $enderecoViaCep = $response->json();
+        $enderecoCompleto = "{$enderecoViaCep['logradouro']}, {$enderecoViaCep['bairro']}, {$enderecoViaCep['localidade']}-{$enderecoViaCep['uf']}";
+        $endereco = $request->endereco ?: $enderecoCompleto;
 
         $carrinho = session()->get('carrinho', []);
         if(empty($carrinho)) {
@@ -56,7 +67,7 @@ class PedidoController extends Controller
             'frete' => $frete,
             'total' => max($total, 0),
             'cep' => $request->cep,
-            'endereco' => $request->endereco,
+            'endereco' => $endereco,
             'status' => 'pendente',
         ]);
 

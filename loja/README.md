@@ -36,3 +36,9 @@ cd mini-erp
 
 http://localhost:80
 
+5 criar a chave : Execute o comando para gerar a chave:
+
+ ./vendor/bin/sail artisan key:generate
+
+
+ 

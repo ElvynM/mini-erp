@@ -6,7 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Cupom extends Model
 {
+    protected $table = 'cupons';
     protected $fillable = ['codigo','valor_desconto','valor_minimo','validade'];
+
+    public function getRouteKeyName()
+    {
+        return 'id';
+    }
 
     public function isValido()
     {
