@@ -12,4 +12,9 @@ class Produto extends Model
     {
         return $this->hasMany(Estoque::class);
     }
+
+    public function itens()
+    {
+        return $this->hasMany(ItemPedido::class);
+    }
 }
