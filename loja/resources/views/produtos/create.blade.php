@@ -1,68 +1,57 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">Cadastro de Produto</h4>
+<div class="container mt-5">
+    <div class="card shadow border-0 rounded-4">
+        <div class="card-header bg-gradient bg-primary text-white rounded-top-4">
+            <h4 class="mb-0"><i class="bi bi-box-seam-fill me-2"></i>Cadastro de Produto</h4>
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-4">
             @if ($errors->any())
-                <div class="alert alert-danger">
-                    <strong>Oops!</strong> Corrija os erros abaixo.
+                <div class="alert alert-danger rounded-3">
+                    <strong><i class="bi bi-exclamation-triangle-fill me-1"></i> Corrija os erros abaixo:</strong>
                 </div>
             @endif
 
             <form action="{{ route('produtos.store') }}" method="POST">
                 @csrf
 
-                {{-- Nome do Produto --}}
-                <div class="mb-3">
-                    <label for="nome" class="form-label">Nome do Produto</label>
-                    <input type="text" id="nome" name="nome" value="{{ old('nome') }}"
-                        class="form-control @error('nome') is-invalid @enderror">
+                {{-- Nome --}}
+                <div class="mb-4">
+                    <label for="nome" class="form-label fw-semibold">Nome do Produto</label>
+                    <input type="text" id="nome" name="nome" class="form-control rounded-3 shadow-sm @error('nome') is-invalid @enderror" value="{{ old('nome') }}" placeholder="Ex: Camiseta Básica">
                     @error('nome')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 {{-- Preço --}}
-                <div class="mb-3">
-                    <label for="preco" class="form-label">Preço</label>
-                    <input type="number" id="preco" name="preco" step="0.01" min="0"
-                        value="{{ old('preco') }}"
-                        class="form-control @error('preco') is-invalid @enderror">
+                <div class="mb-4">
+                    <label for="preco" class="form-label fw-semibold">Preço (R$)</label>
+                    <input type="text" id="preco" name="preco"
+                        class="form-control rounded-3 shadow-sm @error('preco') is-invalid @enderror"
+                        value="{{ old('preco') }}" placeholder="Ex: 99,90">
                     @error('preco')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 {{-- Variações --}}
-                <div class="mt-4">
-                    <h5 class="mb-3">Variações</h5>
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-layers me-1"></i>Variações</h5>
                     <div id="variacoes">
                         @php $variacoes = old('variacoes', [['nome' => '', 'estoque' => '']]); @endphp
-
                         @foreach ($variacoes as $i => $variacao)
-                            <div class="row g-2 mb-2">
-                                <div class="col">
-                                    <input type="text"
-                                        name="variacoes[{{ $i }}][nome]"
-                                        class="form-control @error("variacoes.$i.nome") is-invalid @enderror"
-                                        placeholder="Nome da Variação"
-                                        value="{{ $variacao['nome'] }}">
+                            <div class="row g-2 mb-2 align-items-center">
+                                <div class="col-md-6">
+                                    <input type="text" name="variacoes[{{ $i }}][nome]" class="form-control rounded-3 shadow-sm @error("variacoes.$i.nome") is-invalid @enderror" placeholder="Ex: Tamanho M" value="{{ $variacao['nome'] }}">
                                     @error("variacoes.$i.nome")
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="col">
-                                    <input type="number"
-                                        name="variacoes[{{ $i }}][estoque]"
-                                        class="form-control @error("variacoes.$i.estoque") is-invalid @enderror"
-                                        placeholder="Estoque"
-                                        min="0"
-                                        value="{{ $variacao['estoque'] }}">
+                                <div class="col-md-4">
+                                    <input type="number" name="variacoes[{{ $i }}][estoque]" class="form-control rounded-3 shadow-sm @error("variacoes.$i.estoque") is-invalid @enderror" placeholder="Estoque" min="0" value="{{ $variacao['estoque'] }}">
                                     @error("variacoes.$i.estoque")
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -71,14 +60,15 @@
                         @endforeach
                     </div>
 
-                    <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="addVariacao()">
-                        <i class="bi bi-plus-circle"></i> Adicionar Variação
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addVariacao()">
+                        <i class="bi bi-plus-circle me-1"></i> Adicionar Variação
                     </button>
                 </div>
 
+                {{-- Botão de salvar --}}
                 <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-circle"></i> Salvar Produto
+                    <button type="submit" class="btn btn-success px-4 shadow-sm">
+                        <i class="bi bi-check-circle-fill me-1"></i> Salvar Produto
                     </button>
                 </div>
             </form>
@@ -86,9 +76,14 @@
     </div>
 </div>
 
-<!-- Optional: Bootstrap Icons -->
+{{-- Bootstrap Icons --}}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
+{{-- Scripts necessários --}}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+
+{{-- Scripts personalizados --}}
 <script>
     let index = {{ count($variacoes) }};
 
@@ -96,15 +91,28 @@
         const div = document.createElement('div');
         div.classList.add('row', 'g-2', 'mb-2');
         div.innerHTML = `
-            <div class="col">
-                <input type="text" name="variacoes[${index}][nome]" class="form-control" placeholder="Nome da Variação">
+            <div class="col-md-6">
+                <input type="text" name="variacoes[${index}][nome]" class="form-control rounded-3 shadow-sm" placeholder="Nome da Variação">
             </div>
-            <div class="col">
-                <input type="number" name="variacoes[${index}][estoque]" class="form-control" placeholder="Estoque" min="0">
+            <div class="col-md-4">
+                <input type="number" name="variacoes[${index}][estoque]" class="form-control rounded-3 shadow-sm" placeholder="Estoque" min="0">
             </div>
         `;
         document.getElementById('variacoes').appendChild(div);
         index++;
     }
+
+    $(document).ready(function () {
+        // Aplica máscara
+        $('#preco').mask('000.000.000,00', { reverse: true });
+
+        // Ao submeter, troca vírgula por ponto
+        $('form').on('submit', function () {
+            const preco = $('#preco').val().replace(/\./g, '').replace(',', '.');
+            $('#preco').val(preco);
+        });
+    });
+
 </script>
+
 @endsection
