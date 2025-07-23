@@ -18,15 +18,14 @@
         </thead>
         <tbody>
             @foreach($cupons as $cupom)
-            {{-- @dump($cupom); --}}
             <tr>
                 <td>{{ $cupom->codigo }}</td>
                 <td>R$ {{ number_format($cupom->valor_desconto, 2, ',', '.') }}</td>
                 <td>R$ {{ number_format($cupom->valor_minimo, 2, ',', '.') }}</td>
                 <td>{{ \Carbon\Carbon::parse($cupom->validade)->format('d/m/Y') }}</td>
                 <td>
-                    <a href="{{ route('cupons.edit', $cupom->codigo) }}" class="btn btn-sm btn-warning">Editar</a>
-                    <form action="{{ route('cupons.destroy', $cupom->codigo) }}" method="POST" style="display:inline-block">
+                    <a href="{{ route('cupons.edit', $cupom->id) }}" class="btn btn-sm btn-warning">Editar</a>
+                    <form action="{{ route('cupons.destroy', $cupom->id) }}" method="POST" style="display:inline-block">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remover cupom?')">Excluir</button>
