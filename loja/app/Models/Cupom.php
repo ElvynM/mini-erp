@@ -16,6 +16,7 @@ class Cupom extends Model
 
     public function isValido()
     {
-        return $this->validade->isFuture();
+        $validade = \Carbon\Carbon::parse($this->validade)->endOfDay();
+        return $validade->isFuture();
     }
 }

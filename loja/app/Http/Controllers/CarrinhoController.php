@@ -66,7 +66,18 @@ class CarrinhoController extends Controller
         } else {
             $frete = 20;
         }
-        $total = $subtotal + $frete;
+        $cupom_codigo = request('cupom_codigo');
+        $desconto = 0;
+        $cupom_aplicado = null;
+        if ($cupom_codigo) {
+            $cupom_aplicado = \App\Models\Cupom::where('codigo', $cupom_codigo)
+                ->where('validade', '>=', now()->toDateString())
+                ->first();
+            if ($cupom_aplicado && $subtotal >= $cupom_aplicado->valor_minimo) {
+                $desconto = $cupom_aplicado->valor_desconto;
+            }
+        }
+        $total = max($subtotal + $frete - $desconto, 0);
 
         // Verificação de CEP via ViaCEP
         $cep = request('cep');
@@ -91,7 +102,16 @@ class CarrinhoController extends Controller
                 $cepValido = false;
             }
         }
-        return view('carrinho.index', compact('carrinho', 'subtotal', 'frete', 'total', 'cep', 'cepValido', 'endereco'));
+        // Buscar cupom válido para popup
+        // Exibir popup só se não estiver aplicando cupom ou finalizando pedido
+        $show_popup = !request()->has('cupom_codigo') && !request()->isMethod('post');
+        $cupom_popup = null;
+        if ($show_popup) {
+            $cupom_popup = \App\Models\Cupom::where('validade', '>=', now()->toDateString())
+                ->orderByDesc('validade')
+                ->first();
+        }
+        return view('carrinho.index', compact('carrinho', 'subtotal', 'frete', 'desconto', 'total', 'cep', 'cepValido', 'endereco', 'cupom_popup', 'cupom_codigo', 'cupom_aplicado'));
     }
 
     public function remover(Request $request)

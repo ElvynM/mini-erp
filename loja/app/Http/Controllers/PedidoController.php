@@ -53,8 +53,9 @@ class PedidoController extends Controller
 
         // Valida cupom
         $cupom = null;
-        if($request->cupom_codigo) {
-            $cupom = Cupom::where('codigo', $request->cupom_codigo)->first();
+        $codigo = trim($request->cupom_codigo ?? '');
+        if($codigo && strtolower($codigo) !== 'null') {
+            $cupom = Cupom::where('codigo', $codigo)->first();
             if(!$cupom || !$cupom->isValido() || $subtotal < $cupom->valor_minimo) {
                 return redirect()->back()->withErrors('Cupom inválido ou não aplicável');
             }
