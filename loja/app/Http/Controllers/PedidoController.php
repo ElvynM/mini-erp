@@ -17,6 +17,10 @@ class PedidoController extends Controller
             'cep' => 'required|string',
             'endereco' => 'nullable|string',
             'cupom_codigo' => 'nullable|string',
+            'email' => 'required|email',
+        ], [
+            'email.required' => 'O campo e-mail é obrigatório.',
+            'email.email' => 'Informe um e-mail válido para receber a confirmação.',
         ]);
 
         // Integração ViaCEP
@@ -98,12 +102,10 @@ class PedidoController extends Controller
         $itens = ItemPedido::where('pedido_id', $pedido->id)->get();
         // Limpa carrinho
         session()->forget('carrinho');
+
+        $email = $request->email;
+        Mail::to($email)->send(new \App\Mail\PedidoConfirmacao($pedido, $itens, $email));
         return view('pedido.confirmacao', compact('pedido', 'itens'));
-        // Enviar e-mail (básico)
-        Mail::raw("Pedido #{$pedido->id} criado com endereço: {$pedido->endereco}", function($message) {
-            $message->to('cliente@exemplo.com') // substitua pelo e-mail real do cliente
-                    ->subject('Confirmação de Pedido');
-        });
     }
 }
 

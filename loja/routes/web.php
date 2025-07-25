@@ -8,9 +8,6 @@ use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
-// Route::get('/', function () {
-//     return redirect()->route('welcome');
-// });
 
 Route::get('/',[
     ProdutosController::class, 'index'
@@ -31,7 +28,6 @@ Route::post('/carrinho/finalizar', [PedidoController::class, 'finalizar'])->name
 
 Route::post('/webhook/pedido', [WebhookController::class, 'atualizarStatus'])->name('webhook.atualizarStatus');
 
-// Route::resource('cupons', CupomController::class);
 Route::get('/cupons', [CupomController::class, 'index'])->name('cupons.index');
 Route::get('/cupons/create', [CupomController::class, 'create'])->name('cupons.create');
 Route::post('/cupons', [CupomController::class, 'store'])->name('cupons.store');

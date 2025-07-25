@@ -108,6 +108,7 @@ class CarrinhoController extends Controller
         $cupom_popup = null;
         if ($show_popup) {
             $cupom_popup = \App\Models\Cupom::where('validade', '>=', now()->toDateString())
+                ->where('valor_minimo', '<=', $subtotal)
                 ->orderByDesc('validade')
                 ->first();
         }

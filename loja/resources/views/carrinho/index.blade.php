@@ -147,6 +147,13 @@
             <input type="hidden" name="cupom_codigo" value="{{ $cupom_codigo }}">
             <input type="hidden" name="cep" value="{{ $cep ?? '' }}">
             <input type="hidden" name="endereco" value="{{ $endereco ?? '' }}">
+            <div class="mb-3">
+                <label for="email" class="form-label">E-mail para confirmação</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required placeholder="Digite seu e-mail">
+                @error('email')
+                    <div class="text-danger small">{{ $message }}</div>
+                @enderror
+            </div>
             <button type="submit" class="btn btn-success">Finalizar Pedido</button>
         </form>
     @endif
