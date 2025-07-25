@@ -70,9 +70,10 @@ class PedidoController extends Controller
             'cep' => $request->cep,
             'endereco' => $endereco,
             'status' => 'pendente',
+            'cupom_codigo' => isset($cupom) && $cupom ? $cupom->codigo : null,
         ]);
 
-        // Cria itens do pedido
+        // Cria itens do pedido e atualiza estoque
         foreach($carrinho as $item) {
             ItemPedido::create([
                 'pedido_id' => $pedido->id,
@@ -81,18 +82,28 @@ class PedidoController extends Controller
                 'quantidade' => $item['quantidade'],
                 'preco_unitario' => $item['preco'],
             ]);
+            // Atualiza estoque
+            $estoque = \App\Models\Estoque::where('produto_id', $item['produto_id'])
+                ->where('variacao', $item['variacao'])
+                ->first();
+            if ($estoque) {
+                $estoque->quantidade = max($estoque->quantidade - $item['quantidade'], 0);
+                $estoque->save();
+            }
         }
-
+        // Atualiza status do pedido para finalizado
+        $pedido->status = 'finalizado';
+        $pedido->save();
+        // Recupera itens para exibir na confirmação
+        $itens = ItemPedido::where('pedido_id', $pedido->id)->get();
+        // Limpa carrinho
+        session()->forget('carrinho');
+        return view('pedido.confirmacao', compact('pedido', 'itens'));
         // Enviar e-mail (básico)
         Mail::raw("Pedido #{$pedido->id} criado com endereço: {$pedido->endereco}", function($message) {
             $message->to('cliente@exemplo.com') // substitua pelo e-mail real do cliente
                     ->subject('Confirmação de Pedido');
         });
-
-        // Limpa carrinho
-        session()->forget('carrinho');
-
-        return redirect()->route('produtos.index')->with('success', 'Pedido finalizado com sucesso!');
     }
 }
 

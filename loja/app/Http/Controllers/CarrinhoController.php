@@ -52,7 +52,7 @@ class CarrinhoController extends Controller
         return redirect()->route('produtos.index')->with('success', 'Produto adicionado ao carrinho!');
     }
 
-    public function mostrar()
+    public function mostrar()        
     {
         $carrinho = session()->get('carrinho', []);
         $subtotal = 0;

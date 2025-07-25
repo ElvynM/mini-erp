@@ -84,7 +84,7 @@ return [
     'numeric' => 'O campo :attribute deve ser um número.',
     'present' => 'O campo :attribute deve estar presente.',
     'regex' => 'O formato do campo :attribute é inválido.',
-    'required' => 'O campo :attribute é obrigatório.',
+    'required' => 'Por favor, preencha o campo :attribute para continuar.',
     'required_if' => 'O campo :attribute é obrigatório quando :other é :value.',
     'required_unless' => 'O campo :attribute é obrigatório a menos que :other esteja em :values.',
     'required_with' => 'O campo :attribute é obrigatório quando :values está presente.',
@@ -116,6 +116,7 @@ return [
         'preco' => 'preço',
         'variacoes.*.nome' => 'nome da variação',
         'variacoes.*.estoque' => 'estoque da variação',
+        'cep' => 'CEP',
     ],
 
 ];
