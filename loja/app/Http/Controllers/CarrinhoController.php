@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Cupom;
 use App\Models\Produto;
 use App\Models\Estoque;
 use Illuminate\Http\Request;
@@ -52,37 +53,65 @@ class CarrinhoController extends Controller
         return redirect()->route('produtos.index')->with('success', 'Produto adicionado ao carrinho!');
     }
 
-    public function mostrar()        
+    public function mostrar()
     {
         $carrinho = session()->get('carrinho', []);
         $subtotal = 0;
-        foreach($carrinho as $item) {
+
+        foreach ($carrinho as $item) {
             $subtotal += $item['preco'] * $item['quantidade'];
         }
-        if($subtotal >= 52 && $subtotal <= 166.59) {
+
+        // Calcular frete
+        if ($subtotal >= 52 && $subtotal <= 166.59) {
             $frete = 15;
-        } elseif($subtotal > 200) {
+        } elseif ($subtotal > 200) {
             $frete = 0;
         } else {
             $frete = 20;
         }
+
+        // Cupom manual
         $cupom_codigo = request('cupom_codigo');
         $desconto = 0;
         $cupom_aplicado = null;
+
         if ($cupom_codigo) {
-            $cupom_aplicado = \App\Models\Cupom::where('codigo', $cupom_codigo)
+            $cupom_aplicado = Cupom::where('codigo', $cupom_codigo)
                 ->where('validade', '>=', now()->toDateString())
                 ->first();
+
             if ($cupom_aplicado && $subtotal >= $cupom_aplicado->valor_minimo) {
                 $desconto = $cupom_aplicado->valor_desconto;
+            } else {
+                // cupom manual inválido ou não atingiu mínimo
+                $cupom_aplicado = null;
             }
         }
+
+        // Cupom automático se nenhum válido foi aplicado
+        if (!$cupom_aplicado) {
+            $cupom_automatico = Cupom::where('validade', '>=', now()->toDateString())
+                ->where('valor_minimo', '<=', $subtotal)
+                ->orderByDesc('valor_desconto')
+                ->first();
+
+            if ($cupom_automatico) {
+                $cupom_aplicado = $cupom_automatico;
+                $desconto = $cupom_aplicado->valor_desconto;
+
+                // Preenche o cupom na view
+                $cupom_codigo = $cupom_aplicado->codigo;
+            }
+        }
+
         $total = max($subtotal + $frete - $desconto, 0);
 
-        // Verificação de CEP via ViaCEP
+        // Verificação de CEP
         $cep = request('cep');
         $cepValido = null;
         $endereco = null;
+
         if ($cep) {
             $cepLimpo = preg_replace('/\D/', '', $cep);
             if (strlen($cepLimpo) === 8) {
@@ -102,18 +131,30 @@ class CarrinhoController extends Controller
                 $cepValido = false;
             }
         }
-        // Buscar cupom válido para popup
-        // Exibir popup só se não estiver aplicando cupom ou finalizando pedido
-        $show_popup = !request()->has('cupom_codigo') && !request()->isMethod('post');
+
+        // Exibir popup com o mesmo cupom que está sendo aplicado
         $cupom_popup = null;
-        if ($show_popup) {
-            $cupom_popup = \App\Models\Cupom::where('validade', '>=', now()->toDateString())
-                ->where('valor_minimo', '<=', $subtotal)
-                ->orderByDesc('validade')
-                ->first();
+        $show_popup = !request()->isMethod('post');
+
+        if ($cupom_aplicado && $show_popup) {
+            $cupom_popup = $cupom_aplicado;
         }
-        return view('carrinho.index', compact('carrinho', 'subtotal', 'frete', 'desconto', 'total', 'cep', 'cepValido', 'endereco', 'cupom_popup', 'cupom_codigo', 'cupom_aplicado'));
+
+        return view('carrinho.index', compact(
+            'carrinho',
+            'subtotal',
+            'frete',
+            'desconto',
+            'total',
+            'cep',
+            'cepValido',
+            'endereco',
+            'cupom_popup',
+            'cupom_codigo',
+            'cupom_aplicado'
+        ));
     }
+
 
     public function remover(Request $request)
     {
